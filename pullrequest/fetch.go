@@ -21,12 +21,12 @@ type PR struct {
 	number       int    // if we fill from a PR, we use the PR number
 	name         string // if we process the main branch, we use the branch name
 	sha          string
-	Author       string
+	packageName  string
+	repoPath     string
+	author       string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	Status       statusInfo
-	PackageName  string
-	repoPath     string
 	IsMainBranch bool
 }
 
@@ -44,6 +44,14 @@ func (pr PR) Number() int {
 
 func (pr PR) SHA() string {
 	return pr.sha
+}
+
+func (pr PR) PackageName() string {
+	return pr.packageName
+}
+
+func (pr PR) Author() string {
+	return pr.author
 }
 
 // Equal checks if two fetched pull requests are equal
@@ -94,17 +102,17 @@ func (pr PR) String() string {
 		return fmt.Sprintf(
 			"[%d - %s - %s][%s][%s]",
 			pr.number,
-			pr.SHA,
-			pr.Author,
+			pr.sha,
+			pr.author,
 			strings.Join(info, ", "),
 			pr.CreatedAt,
 		)
 	}
 	return fmt.Sprintf(
 		"[%s - %s - %s][%s][%s]",
-		pr.Name,
-		pr.SHA,
-		pr.Author,
+		pr.name,
+		pr.sha,
+		pr.author,
 		info,
 		pr.CreatedAt,
 	)
@@ -199,8 +207,8 @@ func (f *prFetcher) FetchWithContext(
 		}
 
 		// augment
-		p.RepoPath = f.repo.Path()
-		p.PackageName = f.repo.Name()
+		p.repoPath = f.repo.Path()
+		p.packageName = f.repo.Name()
 
 		isReviewed := p.Status["reviewed"]
 
@@ -235,8 +243,8 @@ func (f *prFetcher) FetchWithContext(
 		}
 
 		// augment
-		p.RepoPath = f.repo.Path()
-		p.PackageName = f.repo.Name()
+		p.repoPath = f.repo.Path()
+		p.packageName = f.repo.Name()
 		fetched = append(fetched, p)
 	}
 
@@ -380,7 +388,7 @@ func processPull(
 	checkName, status string,
 ) (*PR, error) {
 
-	logging.Debug("Processing pull request", logging.F("id", pr.number))
+	logging.Debug("Processing pull request", logging.F("id", pr.Number))
 
 	var (
 		c   *object.RepoCommit
@@ -395,11 +403,11 @@ func processPull(
 	info, err := getCommitStatusInfo(ctx, c, checkName, status)
 	return &PR{
 		number:       pr.Number,
-		SHA:          c.SHA,
+		sha:          c.SHA,
 		CreatedAt:    pr.CreatedAt,
 		UpdatedAt:    pr.UpdatedAt,
 		Status:       info,
-		Author:       pr.Author.Login,
+		author:       pr.Author.Login,
 		IsMainBranch: false,
 	}, err
 }
@@ -418,11 +426,11 @@ func processMainBranch(
 	info["reviewed"] = true
 
 	return &PR{
-		Name:         b.Name,
-		SHA:          b.Head.SHA,
+		name:         b.Name,
+		sha:          b.Head.SHA,
 		CreatedAt:    b.Head.Commit.Info.CreatedAt, // yikes :-(
 		Status:       info,
-		Author:       b.Head.Author.Login,
+		author:       b.Head.Author.Login,
 		IsMainBranch: true,
 	}, err
 }

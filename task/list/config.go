@@ -2,7 +2,7 @@ package tasklist
 
 import (
 	"github.com/brinick/ali-ci/task"
-	prbuild "github.com/brinick/ali-prbuild"
+	"github.com/brinick/ali-prbuild"
 )
 
 // TaskList is a list of tasks to be run
